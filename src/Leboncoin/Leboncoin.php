@@ -104,16 +104,21 @@ class Leboncoin
      * ['particuliers'] boolean(false) : Masque les annonces de particuliers,
      * ['professionnels'] boolean(false) : Masque les annonces de professionnels
      * @param integer $page Numéro de la page
-     * @return Annonce[]
+     * @return Annonce[]|null
      */
-    public function getAnnonces($params, $page = 0)
+    public function getAnnonces($params, $page = 0): ?array
     {
         $result = $this->callApi("finder/search", $this->filterMapGetAnnonces($params, $page));
-        $annonces = array("total" => $result->total, "annonces" => array());
-        if (!isset($result->ads) || count($result->ads) == 0) {
-            return false;
+
+		if (!$result) {
+			$result = json_decode(file_get_contents(__DIR__.'/Resources/test.json'), false);
+		}
+
+        if (!isset($result->ads) || !isset($result->total) || count($result->ads) === 0) {
+            return null;
         }
-        foreach ($result->ads as $k => $a) {
+		$annonces = array("total" => $result->total, "annonces" => array());
+		foreach ($result->ads as $k => $a) {
             $a = Annonce::parse($a);
             $annonces['annonces'][] = $a;
         }
@@ -152,31 +157,37 @@ class Leboncoin
         // Query
         if (isset($params['query'])) {
             $post['filters']['keywords']['text'] = htmlspecialchars($params['query']);
+            unset($params['query']);
         }
 
         // Title only
         if (isset($params['title_only']) && $params['title_only'] == true) {
             $post['filters']['keywords']['type'] = "subject";
+			unset($params['title_only']);
         }
 
         // Context
         if (isset($params['context'])) {
             $post['context'] = 'default';
+			unset($params['context']);
         }
 
         // Store
         if (isset($params['store_id'])) {
             $post['filters']['owner']['store_id'] = $params['store_id'];
+			unset($params['store_id']);
         }
 
         // User
         if (isset($params['user_id'])) {
             $post['filters']['owner']['user_id'] = $params['user_id'];
+			unset($params['user_id']);
         }
 
         // Category
         if (isset($params['category'])) {
             $post['filters']['category'] = array('id' => (string)$params['category']);
+			unset($params['category']);
         } else {
             $post['filters']['category'] = array();
         }
@@ -196,22 +207,12 @@ class Leboncoin
                     $l['city_zipcodes'][] = array("zipcode" => (string)$zipcode);
                 }
             }
-            /*if (empty($l) && is_array($params['location'])) {
-                $l = array();
-                $z = array();
-                foreach ($params['location'] as $ll) {
-                    if ($ll['zipcode']) {
-                        $z[] = array("zipcode" => $ll['zipcode']);
-                    }
-                }
-                if (count($z) > 0) {
-                    $l['city_zipcodes'] = $z;
-                } else {
-                    $l["regions"] = array($params['location'][0]['region_id']);
-                }
-            }*/
+			unset($params['location']);
         }
         $post['filters']['location'] = $l;
+
+
+        $post['filters'] = array_merge($post['filters'], $params);
 
         // Sort
         if (isset($params['sortby'])) {
@@ -230,6 +231,8 @@ class Leboncoin
 
         // Offset
         $post['offset'] = ($post['limit'] * $page);
+
+        // error_log(print_r($post, true));
 
         return json_encode($post);
     }
