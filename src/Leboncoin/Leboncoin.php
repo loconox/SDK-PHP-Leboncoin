@@ -259,9 +259,9 @@ class Leboncoin
      */
     protected function callApi($base, $post = false)
     {
-        $a = json_decode($this->curl($this->urlBase.$base, $post));
+        $a = json_decode($this->curl($this->urlBase.$base, $post), true);
 
-        return (json_last_error() == JSON_ERROR_NONE) ? $a : false;
+        return (json_last_error() === JSON_ERROR_NONE) ? $a : false;
     }
 
     /**
@@ -274,9 +274,9 @@ class Leboncoin
      */
     protected function callApiLogged($base, $access, $post = false)
     {
-        $a = json_decode($this->curl($this->urlBase.$base, $post, $access));
+        $a = json_decode($this->curl($this->urlBase.$base, $post, $access), true);
 
-        return (json_last_error() == JSON_ERROR_NONE) ? $a : false;
+        return (json_last_error() === JSON_ERROR_NONE) ? $a : false;
     }
 
     /**
@@ -413,15 +413,31 @@ class Leboncoin
         curl_setopt($ch, CURLOPT_REFERER, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // 1
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_VERBOSE, true);
+        $verbose = fopen('php://temp', 'w+');
+        curl_setopt($ch, CURLOPT_STDERR, $verbose);
+
         $output = curl_exec($ch);
 
         $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
+        rewind($verbose);
+        $verboseLog = stream_get_contents($verbose);
+
+        error_log($post);
+        error_log($verboseLog);
+
         switch ($status) {
             case 400:
-                throw new \RuntimeException('API a répondu 400 : bad request');
+                rewind($verbose);
+                $verboseLog = stream_get_contents($verbose);
+
+                error_log($verboseLog);
+
+                throw new \RuntimeException(sprintf("cUrl error (#%d): %s<br>\n", curl_errno($ch), htmlspecialchars(curl_error($ch))));
         }
 
         curl_close($ch);
