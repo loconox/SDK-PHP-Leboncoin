@@ -377,7 +377,7 @@ class Leboncoin
      * @param  boolean $cache Spécifie le controle du cache
      * @return string
      */
-    private function curl($url, $post = false, $access = false, $cookie = false, $cache = false)
+    private function curl($url, $post = false, $access = false, $cookie = false, $cache = false): string
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -486,7 +486,7 @@ class Leboncoin
      *
      * @param  boolean|array $params Parametres donnés à la recherche (voir getAnnonces)
      * @param  integer $page Numéro de le page
-     * @return Annonce[]          Retourne le résultat de getAnnoncesUser
+     * @return Annonce[] Retourne le résultat de getAnnoncesUser
      */
     public function getMyAnnonces($params = false, $page = 0)
     {
@@ -498,7 +498,7 @@ class Leboncoin
     }
 
     /**
-     * @return User
+     * @return User|null
      */
     public function getUser(): ?User
     {
