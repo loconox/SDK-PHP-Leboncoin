@@ -259,7 +259,7 @@ class Leboncoin
      */
     protected function callApi($base, $post = false)
     {
-        $a = json_decode($this->curl($this->urlBase.$base, $post), true);
+        $a = json_decode($this->curl($this->urlBase.$base, $post), false);
 
         return (json_last_error() === JSON_ERROR_NONE) ? $a : false;
     }
@@ -274,7 +274,7 @@ class Leboncoin
      */
     protected function callApiLogged($base, $access, $post = false)
     {
-        $a = json_decode($this->curl($this->urlBase.$base, $post, $access), true);
+        $a = json_decode($this->curl($this->urlBase.$base, $post, $access), false);
 
         return (json_last_error() === JSON_ERROR_NONE) ? $a : false;
     }
@@ -424,17 +424,12 @@ class Leboncoin
 
         $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-        rewind($verbose);
-        $verboseLog = stream_get_contents($verbose);
-
-        error_log($post);
-        error_log($verboseLog);
-
         switch ($status) {
             case 400:
                 rewind($verbose);
                 $verboseLog = stream_get_contents($verbose);
 
+				error_log($post);
                 error_log($verboseLog);
 
                 throw new \RuntimeException(sprintf("cUrl error (#%d): %s<br>\n", curl_errno($ch), htmlspecialchars(curl_error($ch))));
